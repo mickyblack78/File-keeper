@@ -130,14 +130,39 @@
     }
 
     function importMedia() {
-        // Creates a virtual file input to trigger device storage
         const input = document.createElement('input');
         input.type = 'file';
         input.onchange = e => { 
             const file = e.target.files[0];
-            alert("Loaded: " + file.name + " (Ready for processing)");
+            const reader = new FileReader();
+            const previewArea = document.getElementById('preview-area');
+            const editor = document.getElementById('editor');
+
+            // Handle Text Files (.txt, .html, .py, etc)
+            if (file.type.includes('text') || file.name.endsWith('.py') || file.name.endsWith('.js')) {
+                reader.onload = (event) => {
+                    editor.value = event.target.result; // Put text into the editor
+                    previewArea.innerHTML = ""; // Clear media preview
+                };
+                reader.readAsText(file);
+            } 
+            // Handle Media (Images, Video, Audio)
+            else {
+                const url = URL.createObjectURL(file);
+                previewArea.innerHTML = ""; // Clear old preview
+                
+                if (file.type.includes('image')) {
+                    previewArea.innerHTML = `<img src="${url}" style="max-width:100%; border:1px solid #39FF14;">`;
+                } else if (file.type.includes('video')) {
+                    previewArea.innerHTML = `<video src="${url}" controls style="max-width:100%;"></video>`;
+                } else if (file.type.includes('audio')) {
+                    previewArea.innerHTML = `<audio src="${url}" controls style="width:100%;"></audio>`;
+                }
+                editor.value = `Loaded Media: ${file.name}`; // Just a label
         }
         input.click();
+            }
+        
     }
 </script>
 
