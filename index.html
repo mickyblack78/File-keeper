@@ -5,165 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sovereign Neon Vault</title>
     <style>
-        :root { 
-            --bg: #000000; 
-            --text: #39FF14; 
-            --accent: #39FF14; 
-            --border: 3px solid #39FF14;
-        }
-        body { 
-            margin: 0; 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: 'Courier New', monospace; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            overflow: hidden;
-        }
-        /* Neon Border Container */
-        #container {
-            margin: 10px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            border: var(--border);
-            box-shadow: 0 0 10px #39FF14;
-        }
-        #auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 100; display: flex;
-            flex-direction: column; align-items: center; justify-content: center;
-        }
-        #toolbar { 
-            padding: 15px; 
-            background: #111; 
-            display: flex; 
-            gap: 10px; 
-            border-bottom: var(--border); 
-            flex-wrap: wrap; 
-        }
-        <div id="preview-area" style="text-align:center; padding:10px;"></div>
-        textarea { 
-            flex-grow: 1; 
-            background: transparent; 
-            color: var(--text); 
-            border: none; 
-            padding: 20px; 
-            font-size: 16px; 
-            resize: none; 
-            outline: none; 
-            line-height: 1.5; 
-        }
-        input, select, button { 
-            background: black; 
-            color: var(--text); 
-            border: 1px solid var(--accent); 
-            padding: 8px; 
-            border-radius: 0; 
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        button:hover { background: var(--accent); color: black; }
-        .hidden { display: none !important; }
+        :root { --bg: #000; --text: #39FF14; --border: 2px solid #39FF14; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: monospace; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        #container { margin: 5px; flex-grow: 1; display: flex; flex-direction: column; border: var(--border); box-shadow: 0 0 15px #39FF14; }
+        #toolbar { padding: 10px; background: #111; display: flex; gap: 8px; border-bottom: var(--border); flex-wrap: wrap; }
+        #viewer { max-height: 200px; overflow: hidden; display: flex; justify-content: center; background: #050505; }
+        #viewer img, #viewer video { max-height: 200px; border: 1px solid #39FF14; }
+        textarea { flex-grow: 1; background: transparent; color: var(--text); border: none; padding: 15px; font-size: 16px; outline: none; }
+        input, select, button { background: #000; color: var(--text); border: 1px solid var(--text); padding: 5px; cursor: pointer; }
+        button:hover { background: var(--text); color: #000; }
+        #console { height: 80px; background: #050505; border-top: var(--border); padding: 10px; overflow-y: auto; font-size: 12px; color: #39FF14; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-<div id="auth-overlay">
-    <h2>KEY REQUIRED</h2>
-    <input type="password" id="passkey" placeholder="Enter Key">
-    <br>
-    <button onclick="unlock()">UNLOCK</button>
-</div>
-
 <div id="container">
     <div id="toolbar">
-        <input type="text" id="fileName" placeholder="filename" value="vault_entry">
-        
+        <input type="text" id="fileName" placeholder="filename" style="width:80px;">
         <select id="extension">
             <option value=".txt">.txt</option>
             <option value=".html">.html</option>
             <option value=".py">.py</option>
-            <option value=".js">.js</option>
-            <option value=".mp3">.mp3</option>
-            <option value=".mp4">.mp4</option>
             <option value=".run">.run</option>
-            <option value=".exe">.exe</option>
+            <option value=".pdf">.pdf</option>
         </select>
-
-        <button onclick="saveFile()">Save & Clear</button>
-        <button onclick="importMedia()">Import/Open</button>
+        <button onclick="internalSave()">SAVE (5MB)</button>
+        <button onclick="importFile()">IMPORT/VIEW</button>
+        <button onclick="exportFile()">DOWNLOAD</button>
+        <button onclick="runCode()">RUN</button>
+        <button onclick="clearAll()" style="color:red; border-color:red;">WIPE</button>
     </div>
 
-    <textarea id="editor" placeholder="Write or paste your data here..."></textarea>
+    <div id="viewer"></div> <textarea id="editor" placeholder="System Ready..."></textarea>
+    
+    <div id="console">Console: Operational.</div>
 </div>
 
 <script>
-    const MASTER_KEY = "1234"; // Set your password here
+    window.onload = () => {
+        const saved = localStorage.getItem('vault_data');
+        if (saved) { document.getElementById('editor').value = saved; log("Restored session."); }
+    };
 
-    function unlock() {
-        const input = document.getElementById('passkey').value;
-        if(input === MASTER_KEY) {
-            document.getElementById('auth-overlay').classList.add('hidden');
-        } else {
-            alert("ACCESS DENIED");
-        }
+    function log(msg) {
+        const c = document.getElementById('console');
+        c.innerHTML += `<br>> ${msg}`;
+        c.scrollTop = c.scrollHeight;
     }
 
-    function saveFile() {
-        const text = document.getElementById('editor').value;
-        const name = document.getElementById('fileName').value;
-        const ext = document.getElementById('extension').value;
-        
-        if(!text) return;
-
-        const blob = new Blob([text], { type: "text/plain" });
-        const link = document.createElement("a");
-        
-        link.download = name + ext;
-        link.href = window.URL.createObjectURL(blob);
-        link.click();
-
-        // Clear Screen Logic
-        document.getElementById('editor').value = "";
-        window.URL.revokeObjectURL(link.href);
+    function internalSave() {
+        localStorage.setItem('vault_data', document.getElementById('editor').value);
+        log("Data secured internally.");
     }
 
-    function importMedia() {
+    function importFile() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.onchange = e => { 
+        input.onchange = e => {
             const file = e.target.files[0];
-            const reader = new FileReader();
-            const previewArea = document.getElementById('preview-area');
+            const viewer = document.getElementById('viewer');
             const editor = document.getElementById('editor');
+            const url = URL.createObjectURL(file);
+            viewer.innerHTML = ""; // Clear old media
 
-            // Handle Text Files (.txt, .html, .py, etc)
-            if (file.type.includes('text') || file.name.endsWith('.py') || file.name.endsWith('.js')) {
-                reader.onload = (event) => {
-                    editor.value = event.target.result; // Put text into the editor
-                    previewArea.innerHTML = ""; // Clear media preview
-                };
+            if (file.type.includes('image')) {
+                viewer.innerHTML = `<img src="${url}">`;
+                log(`Viewing Image: ${file.name}`);
+            } else if (file.type.includes('video')) {
+                viewer.innerHTML = `<video src="${url}" controls></video>`;
+                log(`Playing Video: ${file.name}`);
+            } else {
+                const reader = new FileReader();
+                reader.onload = (ev) => { editor.value = ev.target.result; log(`Imported Text: ${file.name}`); };
                 reader.readAsText(file);
-            } 
-            // Handle Media (Images, Video, Audio)
-            else {
-                const url = URL.createObjectURL(file);
-                previewArea.innerHTML = ""; // Clear old preview
-                
-                if (file.type.includes('image')) {
-                    previewArea.innerHTML = `<img src="${url}" style="max-width:100%; border:1px solid #39FF14;">`;
-                } else if (file.type.includes('video')) {
-                    previewArea.innerHTML = `<video src="${url}" controls style="max-width:100%;"></video>`;
-                } else if (file.type.includes('audio')) {
-                    previewArea.innerHTML = `<audio src="${url}" controls style="width:100%;"></audio>`;
-                }
-                editor.value = `Loaded Media: ${file.name}`; // Just a label
-        }
-        input.click();
             }
-        
+        };
+        input.click();
+    }
+
+    function exportFile() {
+        const text = document.getElementById('editor').value;
+        const name = (document.getElementById('fileName').value || "export") + document.getElementById('extension').value;
+        const blob = new Blob([text], { type: "text/plain" });
+        const link = document.createElement("a");
+        link.download = name;
+        link.href = window.URL.createObjectURL(blob);
+        link.click();
+        log(`Downloaded ${name}`);
+    }
+
+    function runCode() {
+        const code = document.getElementById('editor').value;
+        const ext = document.getElementById('extension').value;
+        try {
+            if(ext === '.html') {
+                const win = window.open();
+                win.document.write(code);
+            } else {
+                eval(code);
+                log("Code execution finished.");
+            }
+        } catch (e) { log("ERR: " + e.message); }
+    }
+
+    function clearAll() {
+        if(confirm("Wipe everything?")) {
+            document.getElementById('editor').value = "";
+            document.getElementById('viewer').innerHTML = "";
+            localStorage.removeItem('vault_data');
+            log("System Wiped.");
+        }
     }
 </script>
 
