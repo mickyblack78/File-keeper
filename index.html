@@ -94,19 +94,27 @@
         log(`Downloaded ${name}`);
     }
 
-    function runCode() {
+        function runCode() {
         const code = document.getElementById('editor').value;
         const ext = document.getElementById('extension').value;
         try {
             if(ext === '.html') {
-                const win = window.open();
+                // Opens a new window and forces it to full device width/height
+                const win = window.open("", "_blank", `width=${window.innerWidth},height=${window.innerHeight}`);
+                win.document.open();
                 win.document.write(code);
+                win.document.close();
+                log("HTML Instance Launched Fullscreen.");
             } else {
+                // If it's just JS/logic, run it in the background
                 eval(code);
-                log("Code execution finished.");
+                log("Script executed.");
             }
-        } catch (e) { log("ERR: " + e.message); }
+        } catch (e) { 
+            log("ERR: " + e.message); 
+        }
     }
+    
 
     function clearAll() {
         if(confirm("Wipe everything?")) {
