@@ -2,129 +2,229 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign Neon Vault</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CRUNCHY 64 - V8.4 STATIC TEMPLATE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        :root { --bg: #000; --text: #39FF14; --border: 2px solid #39FF14; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: monospace; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        #container { margin: 5px; flex-grow: 1; display: flex; flex-direction: column; border: var(--border); box-shadow: 0 0 15px #39FF14; }
-        #toolbar { padding: 10px; background: #111; display: flex; gap: 8px; border-bottom: var(--border); flex-wrap: wrap; }
-        #viewer { max-height: 200px; overflow: hidden; display: flex; justify-content: center; background: #050505; }
-        #viewer img, #viewer video { max-height: 200px; border: 1px solid #39FF14; }
-        textarea { flex-grow: 1; background: transparent; color: var(--text); border: none; padding: 15px; font-size: 16px; outline: none; }
-        input, select, button { background: #000; color: var(--text); border: 1px solid var(--text); padding: 5px; cursor: pointer; }
-        button:hover { background: var(--text); color: #000; }
-        #console { height: 80px; background: #050505; border-top: var(--border); padding: 10px; overflow-y: auto; font-size: 12px; color: #39FF14; opacity: 0.7; }
+        :root { --neon: #39ff14; --ghost: #00f3ff; }
+        * { box-sizing: border-box; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
+        #shield { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 8000; }
+        #top-bar { position: fixed; top: 25px; left: 0; width: 100%; height: 80px; display: flex; align-items: center; padding: 0 10px; z-index: 9999; }
+        #menu-trigger { background: #111; color: var(--ghost); border: 2px solid var(--ghost); padding: 15px; font-weight: bold; min-width: 80px; }
+        #slider-container { flex-grow: 1; padding: 0 15px; }
+        #uni-slider { width: 100%; accent-color: var(--ghost); display: none; }
+        #menu-box { display: none; position: absolute; top: 85px; left: 10px; width: 260px; background: #111; border: 2px solid var(--ghost); padding: 15px; z-index: 9999; color: var(--ghost); }
+        .m-btn { background: #222; border: 1px solid var(--ghost); color: var(--ghost); width: 100%; padding: 12px; font-size: 12px; margin-bottom: 8px; font-weight: bold; }
+        #stage-area { position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: #0a0a0a; z-index: 10; }
+        canvas { display: block; width: 100%; height: 100%; }
+        #ink { position: absolute; top: 50%; left: 50%; border: 3px solid var(--neon); width: 300px; height: 100px; background: rgba(0, 255, 0, 0.1); z-index: 50; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); }
+        #ink input { background: transparent; border: none; color: white; text-align: center; width: 100%; height: 100%; outline: none; font-size: 32px; font-family: monospace; }
+        #sig-modal { display: none; position: fixed; inset: 0; background: #000; z-index: 10000; flex-direction: column; }
+        #sig-canvas { background: #fff; width: 100%; flex-grow: 1; }
+        #sig-controls { background: #111; height: 80px; display: flex; gap: 10px; padding: 10px; border-top: 2px solid var(--ghost); }
+        #save-menu { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #111; border: 3px solid var(--neon); padding: 20px; z-index: 10001; color: #fff; }
+        .save-input { width: 100%; background: #222; border: 1px solid var(--ghost); color: #fff; padding: 10px; margin: 10px 0; font-family: monospace; }
     </style>
 </head>
 <body>
-
-<div id="container">
-    <div id="toolbar">
-        <input type="text" id="fileName" placeholder="filename" style="width:80px;">
-        <select id="extension">
-            <option value=".txt">.txt</option>
-            <option value=".html">.html</option>
-            <option value=".py">.py</option>
-            <option value=".run">.run</option>
-            <option value=".pdf">.pdf</option>
+<div id="shield"></div>
+<div id="top-bar">
+    <button id="menu-trigger">MENU</button>
+    <div id="slider-container"><input type="range" id="uni-slider" min="0" max="100" value="50"></div>
+    <div id="menu-box">
+        <button class="m-btn" onclick="document.getElementById('f-pick').click()">LOAD IMAGE/PDF</button>
+        <button class="m-btn" id="i-center" style="color:var(--neon); border-color:var(--neon);">CENTER DOC</button>
+        <button class="m-btn" id="i-stamp">STAMP TEXT</button>
+        <button class="m-btn" id="i-undo">UNDO</button>
+        <button class="m-btn" id="i-open-sig">SIGNATURE MODE</button>
+        <hr style="border:0; border-top:1px solid #444; margin: 10px 0;">
+        <select id="stamp-mode" style="background:#222; color:#fff; width:100%; padding:10px; margin-bottom:10px;">
+            <option value="none">-- STYLE --</option>
+            <option value="bold">Boldness</option>
+            <option value="color">Color</option>
+            <option value="shade">Shade</option>
+            <option value="stretch">Text Stretch</option>
         </select>
-        <button onclick="internalSave()">SAVE (5MB)</button>
-        <button onclick="importFile()">IMPORT/VIEW</button>
-        <button onclick="exportFile()">DOWNLOAD</button>
-        <button onclick="runCode()">RUN</button>
-        <button onclick="clearAll()" style="color:red; border-color:red;">WIPE</button>
+        <button class="m-btn" id="open-save-menu" style="background:var(--ghost); color:#000;">SAVE AS...</button>
     </div>
-
-    <div id="viewer"></div> <textarea id="editor" placeholder="System Ready..."></textarea>
-    
-    <div id="console">Console: Operational.</div>
 </div>
 
+<div id="save-menu">
+    <div style="font-weight:bold; color:var(--neon); margin-bottom:10px;">SAVE FILE</div>
+    <input type="text" id="save-name" class="save-input" placeholder="filename">
+    <select id="save-ext" class="save-input">
+        <option value="png">.PNG (Image)</option>
+        <option value="pdf">.PDF (Document)</option>
+        <option value="json">.JSON (Data)</option>
+        <option value="txt">.TXT (Text)</option>
+    </select>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="m-btn" id="exec-download" style="flex:2; background:var(--neon); color:#000;">DOWNLOAD</button>
+        <button class="m-btn" style="flex:1; border-color:red; color:red;" onclick="closeSave()">X</button>
+    </div>
+</div>
+
+<div id="stage-area"><canvas id="canv"></canvas><div id="ink"><input type="text" id="entry" placeholder="TYPE" spellcheck="false"></div></div>
+<div id="sig-modal">
+    <canvas id="sig-canvas"></canvas>
+    <div id="sig-controls">
+        <button class="m-btn" id="sig-clear" style="flex:1">CLEAR</button>
+        <button class="m-btn" id="sig-done" style="flex:1; border-color:var(--neon); color:var(--neon);">STAMP</button>
+        <button class="m-btn" id="sig-cancel" style="border-color:red; color:red; flex:1">EXIT</button>
+    </div>
+</div>
+<input type="file" id="f-pick" style="display:none" accept="image/*,.pdf">
+
 <script>
-    window.onload = () => {
-        const saved = localStorage.getItem('vault_data');
-        if (saved) { document.getElementById('editor').value = saved; log("Restored session."); }
-    };
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    function log(msg) {
-        const c = document.getElementById('console');
-        c.innerHTML += `<br>> ${msg}`;
-        c.scrollTop = c.scrollHeight;
-    }
+const stage = document.getElementById('canv'), ctx = stage.getContext('2d');
+const ink = document.getElementById('ink'), entry = document.getElementById('entry');
+const menu = document.getElementById('menu-box'), trigger = document.getElementById('menu-trigger'), shield = document.getElementById('shield');
+const uniSlider = document.getElementById('uni-slider'), stampMode = document.getElementById('stamp-mode');
+const sigModal = document.getElementById('sig-modal'), sigCanvas = document.getElementById('sig-canvas'), sctx = sigCanvas.getContext('2d');
+let img = new Image(), history = [], zoom = 1, px = 0, py = 0, lastX, lastY, lastDist, inkScale = 1, isBoxMoving = false, isMenuOpen = false;
+let textBold = 400, textColor = 0, textShade = 50, textStretch = 1.0;
 
-    function internalSave() {
-        localStorage.setItem('vault_data', document.getElementById('editor').value);
-        log("Data secured internally.");
-    }
+function draw() { 
+    stage.width = window.innerWidth; stage.height = window.innerHeight; 
+    ctx.fillStyle = "#0a0a0a"; ctx.fillRect(0,0,stage.width,stage.height); 
+    if (!img.src) return; 
+    ctx.save(); ctx.translate(stage.width/2 + px, stage.height/2 + py); ctx.scale(zoom, zoom); 
+    ctx.drawImage(img, -img.width/2, -img.height/2); ctx.restore(); 
+}
 
-    function importFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.onchange = e => {
-            const file = e.target.files[0];
-            const viewer = document.getElementById('viewer');
-            const editor = document.getElementById('editor');
-            const url = URL.createObjectURL(file);
-            viewer.innerHTML = ""; // Clear old media
+function initSigCanvas() {
+    sigCanvas.width = window.innerWidth; sigCanvas.height = window.innerHeight - 80;
+    sctx.fillStyle = "white"; sctx.fillRect(0,0,sigCanvas.width,sigCanvas.height); 
+    sctx.lineWidth = 6; sctx.strokeStyle = "black"; sctx.lineCap = "round"; sctx.lineJoin = "round"; 
+}
 
-            if (file.type.includes('image')) {
-                viewer.innerHTML = `<img src="${url}">`;
-                log(`Viewing Image: ${file.name}`);
-            } else if (file.type.includes('video')) {
-                viewer.innerHTML = `<video src="${url}" controls></video>`;
-                log(`Playing Video: ${file.name}`);
-            } else {
-                const reader = new FileReader();
-                reader.onload = (ev) => { editor.value = ev.target.result; log(`Imported Text: ${file.name}`); };
-                reader.readAsText(file);
-            }
+document.getElementById('i-center').onclick = () => { if (img.src) { px = 0; py = 0; draw(); trigger.click(); } };
+
+window.addEventListener('resize', () => { draw(); if (sigModal.style.display === 'flex') initSigCanvas(); });
+trigger.onclick = () => { isMenuOpen = !isMenuOpen; menu.style.display = isMenuOpen ? 'block' : 'none'; shield.style.display = isMenuOpen ? 'block' : 'none'; };
+
+document.getElementById('f-pick').onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    shield.style.display = 'block';
+    if (file.type === "application/pdf") {
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const pdf = await pdfjsLib.getDocument({data: new Uint8Array(this.result)}).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({scale: 3});
+            const canvas = document.createElement('canvas');
+            canvas.height = viewport.height; canvas.width = viewport.width;
+            await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+            img.onload = () => { zoom = 1.0; px = 0; py = 0; saveHistory(); draw(); shield.style.display = 'none'; };
+            img.src = canvas.toDataURL('image/png');
         };
-        input.click();
+        reader.readAsArrayBuffer(file);
+    } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => { img.onload = () => { zoom = 1.0; px = 0; py = 0; saveHistory(); draw(); shield.style.display='none'; }; img.src = ev.target.result; };
+        reader.readAsDataURL(file);
     }
+    if (isMenuOpen) { isMenuOpen = false; menu.style.display = 'none'; }
+};
 
-    function exportFile() {
-        const text = document.getElementById('editor').value;
-        const name = (document.getElementById('fileName').value || "export") + document.getElementById('extension').value;
-        const blob = new Blob([text], { type: "text/plain" });
-        const link = document.createElement("a");
-        link.download = name;
-        link.href = window.URL.createObjectURL(blob);
-        link.click();
-        log(`Downloaded ${name}`);
-    }
+document.getElementById('open-save-menu').onclick = () => { menu.style.display = 'none'; document.getElementById('save-menu').style.display = 'block'; shield.style.display = 'block'; };
+function closeSave() { document.getElementById('save-menu').style.display = 'none'; shield.style.display = 'none'; isMenuOpen = false; }
 
-        function runCode() {
-        const code = document.getElementById('editor').value;
-        const ext = document.getElementById('extension').value;
-        try {
-            if(ext === '.html') {
-                // Opens a new window and forces it to full device width/height
-                const win = window.open("", "_blank", `width=${window.innerWidth},height=${window.innerHeight}`);
-                win.document.open();
-                win.document.write(code);
-                win.document.close();
-                log("HTML Instance Launched Fullscreen.");
-            } else {
-                // If it's just JS/logic, run it in the background
-                eval(code);
-                log("Script executed.");
-            }
-        } catch (e) { 
-            log("ERR: " + e.message); 
-        }
-    }
-    
+document.getElementById('exec-download').onclick = () => {
+    const name = document.getElementById('save-name').value || "export";
+    const ext = document.getElementById('save-ext').value;
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = img.width; exportCanvas.height = img.height;
+    exportCanvas.getContext('2d').drawImage(img, 0, 0);
 
-    function clearAll() {
-        if(confirm("Wipe everything?")) {
-            document.getElementById('editor').value = "";
-            document.getElementById('viewer').innerHTML = "";
-            localStorage.removeItem('vault_data');
-            log("System Wiped.");
-        }
+    if (ext === 'png') {
+        const link = document.createElement('a'); link.download = `${name}.png`; link.href = exportCanvas.toDataURL("image/png"); link.click();
+    } else if (ext === 'pdf') {
+        const w = window.open('about:blank');
+        w.document.write(`<html><body style="margin:0;"><img src="${exportCanvas.toDataURL('image/png')}" style="width:100%;"><script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+    } else if (ext === 'json') {
+        const blob = new Blob([JSON.stringify({zoom, px, py, text: entry.value, stretch: textStretch})], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${name}.json`; a.click();
+    } else if (ext === 'txt') {
+        const blob = new Blob([entry.value], {type: 'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${name}.txt`; a.click();
     }
+    closeSave();
+};
+
+window.addEventListener('touchstart', (e) => {
+    if (e.target.closest('#top-bar') || e.target.closest('#save-menu') || sigModal.style.display === 'flex' || shield.style.display === 'block') return;
+    isBoxMoving = (e.target === ink || e.target === entry);
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    if (e.touches.length === 2) lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+}, {passive: false});
+
+window.addEventListener('touchmove', (e) => {
+    if (e.target.closest('#top-bar') || e.target.closest('#save-menu') || sigModal.style.display === 'flex' || shield.style.display === 'block' || document.activeElement === entry) return;
+    e.preventDefault();
+    if (isBoxMoving) {
+        if (e.touches.length === 1) { ink.style.left = e.touches[0].clientX + 'px'; ink.style.top = e.touches[0].clientY + 'px'; }
+        else if (e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); inkScale *= (d / lastDist); lastDist = d; ink.style.transform = `translate(-50%, -50%) scale(${inkScale})`; }
+    } else {
+        if (e.touches.length === 1) { px += (e.touches[0].clientX - lastX); py += (e.touches[0].clientY - lastY); lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }
+        else if (e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); zoom *= (d / lastDist); lastDist = d; }
+        draw();
+    }
+}, {passive: false});
+
+stampMode.onchange = () => { 
+    uniSlider.style.display = stampMode.value === 'none' ? 'none' : 'block'; 
+    if (stampMode.value === 'bold') { uniSlider.min = 100; uniSlider.max = 900; uniSlider.value = textBold; } 
+    else if (stampMode.value === 'stretch') { uniSlider.min = 5; uniSlider.max = 30; uniSlider.value = textStretch * 10; }
+    else { uniSlider.min = 0; uniSlider.max = 100; uniSlider.value = (stampMode.value === 'color' ? textColor : textShade); } 
+};
+uniSlider.oninput = () => { 
+    const v = uniSlider.value; 
+    if (stampMode.value === 'bold') { textBold = v; entry.style.fontWeight = v; } 
+    if (stampMode.value === 'stretch') { textStretch = v / 10; entry.style.transform = `scale(${textStretch}, 1)`; }
+    if (stampMode.value === 'color') { textColor = v; entry.style.color = `hsla(${v * 3.6}, 100%, ${textShade}%, 1)`; } 
+    if (stampMode.value === 'shade') { textShade = v; entry.style.color = `hsla(${textColor * 3.6}, 100%, ${v}%, 1)`; } 
+};
+
+function saveHistory() { const t = document.createElement('canvas'); t.width = img.width; t.height = img.height; t.getContext('2d').drawImage(img, 0, 0); history.push(t.toDataURL()); if (history.length > 20) history.shift(); }
+
+function stampWork(isSig = false) {
+    const t = document.createElement('canvas'); t.width = img.width; t.height = img.height; const tc = t.getContext('2d'); tc.drawImage(img, 0, 0);
+    const iR = ink.getBoundingClientRect();
+    const tx = (iR.left + iR.width/2 - window.innerWidth/2 - px) / zoom + img.width/2;
+    const ty = (iR.top + iR.height/2 - window.innerHeight/2 - py) / zoom + img.height/2;
+    tc.save(); tc.translate(tx, ty);
+    if (isSig) {
+        const sw = sigCanvas.width, sh = sigCanvas.height, temp = document.createElement('canvas'); temp.width = sw; temp.height = sh; 
+        const ttc = temp.getContext('2d'); ttc.drawImage(sigCanvas, 0, 0);
+        const data = ttc.getImageData(0,0,sw,sh);
+        for(let i=0; i<data.data.length; i+=4) if(data.data[i]>200 && data.data[i+1]>200 && data.data[i+2]>200) data.data[i+3]=0;
+        ttc.putImageData(data, 0, 0);
+        tc.drawImage(temp, -(iR.width/2)/zoom, -(iR.height/2)/zoom, iR.width/zoom, iR.height/zoom);
+    } else {
+        tc.fillStyle = entry.style.color || "white";
+        tc.scale(textStretch, 1);
+        tc.font = `${textBold} ${(32 * inkScale / zoom) / textStretch}px monospace`;
+        tc.textAlign = "center"; tc.textBaseline = "middle";
+        tc.fillText(entry.value, 0, 0);
+    }
+    tc.restore(); img.src = t.toDataURL(); img.onload = () => { saveHistory(); draw(); };
+}
+
+document.getElementById('i-stamp').onclick = () => stampWork(false);
+document.getElementById('i-undo').onclick = () => { if (history.length > 1) { history.pop(); img.src = history[history.length - 1]; img.onload = () => draw(); } };
+document.getElementById('i-open-sig').onclick = () => { sigModal.style.display = 'flex'; initSigCanvas(); };
+
+let drawing = false;
+sigCanvas.addEventListener('touchstart', (e) => { drawing = true; const t = e.touches[0]; const r = sigCanvas.getBoundingClientRect(); sctx.beginPath(); sctx.moveTo(t.clientX - r.left, t.clientY - r.top); e.preventDefault(); }, {passive: false});
+sigCanvas.addEventListener('touchmove', (e) => { if (!drawing) return; const t = e.touches[0]; const r = sigCanvas.getBoundingClientRect(); sctx.lineTo(t.clientX - r.left, t.clientY - r.top); sctx.stroke(); e.preventDefault(); }, {passive: false});
+sigCanvas.addEventListener('touchend', () => { drawing = false; });
+document.getElementById('sig-clear').onclick = () => { sctx.fillStyle = "white"; sctx.fillRect(0,0,sigCanvas.width,sigCanvas.height); };
+document.getElementById('sig-cancel').onclick = () => sigModal.style.display = 'none';
+document.getElementById('sig-done').onclick = () => { stampWork(true); sigModal.style.display = 'none'; };
 </script>
-
 </body>
 </html>
